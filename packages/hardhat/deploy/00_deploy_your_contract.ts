@@ -3,42 +3,70 @@ import { DeployFunction } from "hardhat-deploy/types";
 import { Contract } from "ethers";
 
 /**
- * Deploys a contract named "YourContract" using the deployer account and
- * constructor arguments set to the deployer address
+ * Развертывает контракт "YourContract" (Escrow) используя аккаунт deployer
+ * и аргументы конструктора установленные на адрес deployer
  *
- * @param hre HardhatRuntimeEnvironment object.
+ * @param hre HardhatRuntimeEnvironment объект
  */
 const deployYourContract: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   /*
-    On localhost, the deployer account is the one that comes with Hardhat, which is already funded.
-
-    When deploying to live networks (e.g `yarn deploy --network sepolia`), the deployer account
-    should have sufficient balance to pay for the gas fees for contract creation.
-
-    You can generate a random account with `yarn generate` or `yarn account:import` to import your
-    existing PK which will fill DEPLOYER_PRIVATE_KEY_ENCRYPTED in the .env file (then used on hardhat.config.ts)
-    You can run the `yarn account` command to check your balance in every network.
+    На localhost, аккаунт deployer - это один из аккаунтов Hardhat, который уже имеет средства.
+    
+    При развертывании в живые сети (например, yarn deploy --network sepolia), 
+    аккаунт deployer должен иметь достаточный баланс для оплаты газа за создание контракта.
+    
+    Вы можете сгенерировать случайный аккаунт с помощью yarn generate 
+    или импортировать существующий приватный ключ yarn account:import, 
+    который заполнит DEPLOYER_PRIVATE_KEY_ENCRYPTED в файле .env 
+    (затем используется в hardhat.config.ts)
+    
+    Вы можете выполнить команду yarn account для проверки баланса в каждой сети.
   */
   const { deployer } = await hre.getNamedAccounts();
   const { deploy } = hre.deployments;
 
+  console.log("\n📡 Развертывание Escrow контракта...");
+  console.log("👤 Deployer address:", deployer);
+
+  // Проверяем баланс deployer
+  const balance = await hre.ethers.provider.getBalance(deployer);
+  console.log("💰 Deployer balance:", hre.ethers.formatEther(balance), "ETH");
+
   await deploy("YourContract", {
     from: deployer,
-    // Contract constructor arguments
+    // Аргументы конструктора контракта
     args: [deployer],
     log: true,
-    // autoMine: can be passed to the deploy function to make the deployment process faster on local networks by
-    // automatically mining the contract deployment transaction. There is no effect on live networks.
     autoMine: true,
   });
 
-  // Get the deployed contract to interact with it after deploying.
+  // Получаем развернутый контракт для взаимодействия с ним после развертывания
   const yourContract = await hre.ethers.getContract<Contract>("YourContract", deployer);
-  console.log("👋 Initial greeting:", await yourContract.greeting());
+  console.log("✅ Escrow контракт развернут по адресу:", await yourContract.getAddress());
+
+  // Получаем начальную статистику
+  try {
+    const stats = await yourContract.getPlatformStats();
+    console.log("\n📊 Статистика платформы:");
+    console.log("   Всего эскроу:", stats[0].toString());
+    console.log("   Общий объем:", hre.ethers.formatEther(stats[1]), "ETH");
+    console.log("   Комиссия платформы:", stats[2].toString(), "%");
+  } catch (error) {
+    console.log("⚠️  Не удалось получить статистику:", error);
+  }
+
+  // Получаем владельца контракта
+  try {
+    const owner = await yourContract.owner();
+    console.log("\n👑 Владелец контракта:", owner);
+  } catch (error) {
+    console.log("⚠️  Не удалось получить владельца:", error);
+  }
+
+  console.log("\n🎉 Развертывание завершено успешно!");
+  console.log("🔗 Вы можете взаимодействовать с контрактом через UI");
 };
 
 export default deployYourContract;
 
-// Tags are useful if you have multiple deploy files and only want to run one of them.
-// e.g. yarn deploy --tags YourContract
 deployYourContract.tags = ["YourContract"];
