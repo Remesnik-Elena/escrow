@@ -5,17 +5,30 @@
   <a href="https://scaffoldeth.io">Website</a>
 </h4>
 
-🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
+🧪 Этот смарт-контракт реализует продвинутую систему условного депонирования (escrow) для безопасных P2P-транзакций на блокчейне Ethereum. Он предназначен для обеспечения доверия между покупателем и продавцом без необходимости третьих сторон, таких как банки или платежные системы. Контракт поддерживает полный жизненный цикл сделки: от создания и финансирования до доставки, подтверждения, разрешения споров и вывода средств. Включает роли арбитра для разрешения конфликтов, комиссии платформы и арбитра, а также механизмы отмены и возврата средств. Идеально подходит для онлайн-продаж товаров, услуг или цифровых активов, где важно минимизировать риски мошенничества.
 
-⚙️ Built using NextJS, RainbowKit, Foundry/Hardhat, Wagmi, Viem, and Typescript.
+⚙️ Контракт написан на Solidity с использованием Hardhat.
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
+Ключевые особенности:
 
-![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
+Статусы сделок: Отслеживание этапов (создано, профинансировано, доставлено, завершено, оспорено, возвращено, отменено).
+Арбитраж: Независимый арбитр разрешает споры, получая комиссию.
+Комиссии: Платформа берет процент от успешных сделок, арбитр — фиксированную плату.
+Безопасность и прозрачность: Все действия логируются через события, средства блокируются до разрешения.
+Управление: Владелец может обновлять комиссию платформы.
+Вывод средств: Пользователи могут выводить средства безопасно.
+
+Функции
+
+Создание эскроу: Покупатель создает сделку, указывая продавца, арбитра, комиссию арбитра и описание, и сразу финансирует ее.
+Подтверждение доставки: Продавец подтверждает отправку товара.
+Подтверждение получения: Покупатель подтверждает получение, высвобождая средства (минус комиссии).
+Инициирование спора: Покупатель или продавец может оспорить сделку.
+Разрешение спора: Арбитр принимает решение в пользу одной из сторон, распределяя средства.
+Отмена сделки: Возможна до доставки, по инициативе сторон.
+Вывод средств: Пользователи выводят накопленные средства.
+Просмотр данных: Получение деталей сделок, списка эскроу пользователя, статистики платформы.
+Управление платформой: Владелец обновляет комиссию платформы.
 
 ## Requirements
 
@@ -27,18 +40,10 @@ Before you begin, you need to install the following tools:
 
 ## Quickstart
 
-To get started with Scaffold-ETH 2, follow the steps below:
 
-1. Install the latest version of Scaffold-ETH 2
 
-```
-npx create-eth@latest
-```
+1. Клонируйте репозиторий
 
-This command will install all the necessary packages and dependencies, so it might take a while.
-
-> [!NOTE]
-> You can also initialize your project with one of our extensions to add specific features or starter-kits. Learn more in our [extensions documentation](https://docs.scaffoldeth.io/extensions/).
 
 2. Run a local network in the first terminal:
 
@@ -62,27 +67,34 @@ This command deploys a test smart contract to the local network. You can find mo
 yarn start
 ```
 
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
+Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. 
 
-**What's next**:
+Использование
 
-Visit the [What's next section of our docs](https://docs.scaffoldeth.io/quick-start/environment#whats-next) to learn how to:
+Создание эскроу
 
-- Edit your smart contracts
-- Edit your deployment scripts
-- Customize your frontend
-- Edit the app config
-- Writing and running tests
-- [Setting up external services and API keys](https://docs.scaffoldeth.io/deploying/deploy-smart-contracts#configuration-of-third-party-services-for-production-grade-apps)
+Вызовите createEscrow(address payable _seller, address payable _arbiter, uint256 _arbiterFee, string memory _description) с отправкой ETH. Возвращает ID эскроу.
+Пример: Покупатель отправляет 1 ETH, указывает продавца, арбитра и описание.
 
-## Documentation
+Процесс сделки
 
-Visit our [docs](https://docs.scaffoldeth.io) to learn all the technical details and guides of Scaffold-ETH 2.
+Продавец: Вызывает confirmDelivery(uint256 _escrowId) после отправки товара.
+Покупатель: Вызывает confirmReceipt(uint256 _escrowId) для высвобождения средств.
+Если спор: Вызвать raiseDispute(uint256 _escrowId), затем арбитр — resolveDispute(uint256 _escrowId, bool _favorBuyer).
+Отмена: cancelEscrow(uint256 _escrowId) до доставки.
 
-To know more about its features, check out our [website](https://scaffoldeth.io).
+Вывод средств
 
-## Contributing to Scaffold-ETH 2
+Вызовите withdraw() для получения накопленных средств.
+Просмотр данных
 
-We welcome contributions to Scaffold-ETH 2!
+getEscrow(uint256 _escrowId): Детали сделки.
+getUserEscrows(address _user): Список ID эскроу пользователя.
+getPendingWithdrawal(address _user): Сумма для вывода.
+getPlatformStats(): Статистика платформы.
+Управление (только владелец)
+updatePlatformFee(uint256 _newFeePercent): Изменить комиссию платформы (макс. 5%).
 
-Please see [CONTRIBUTING.MD](https://github.com/scaffold-eth/scaffold-eth-2/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-ETH 2.
+Тестирование
+
+yarn hardhat:test
